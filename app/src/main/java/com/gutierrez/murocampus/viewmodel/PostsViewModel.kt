@@ -10,8 +10,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class DetalleUi(val post: Post, val comentarios: List<Comentario>)
@@ -34,6 +37,10 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     // ---------- Paso 9: crear (null = aún no se envió) ----------
     private val _envio = MutableStateFlow<UiState<Post>?>(null)
     val envio: StateFlow<UiState<Post>?> = _envio.asStateFlow()
+
+    // ---------- Fase 2: editar título (null = sin edición en curso) ----------
+    private val _edicion = MutableStateFlow<UiState<Post>?>(null)
+    val edicion: StateFlow<UiState<Post>?> = _edicion.asStateFlow()
 
     private var jobLista: Job? = null
     private var jobDetalle: Job? = null
@@ -97,5 +104,35 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     fun reiniciarEnvio() {
         _envio.value = null
+    }
+
+    fun editarTitulo(id: Int, nuevoTitulo: String) {
+        val titulo = nuevoTitulo.trim()
+        if (titulo.isEmpty() || _edicion.value is UiState.Cargando) return
+        _edicion.value = UiState.Cargando
+        viewModelScope.launch {
+            repo.editar(id, titulo)
+                .onSuccess { actualizado ->
+                    // JSONPlaceholder no guarda el cambio: lo reflejamos en memoria
+                    val d = _detalle.value
+                    if (d is UiState.Exito && d.datos.post.id == id) {
+                        _detalle.value = UiState.Exito(
+                            d.datos.copy(post = d.datos.post.copy(title = actualizado.title))
+                        )
+                    }
+                    val l = _lista.value
+                    if (l is UiState.Exito) {
+                        _lista.value = UiState.Exito(
+                            l.datos.map { if (it.id == id) it.copy(title = actualizado.title) else it }
+                        )
+                    }
+                    _edicion.value = UiState.Exito(actualizado)
+                }
+                .onFailure { _edicion.value = UiState.Error(mensajeDe(it)) }
+        }
+    }
+
+    fun reiniciarEdicion() {
+        _edicion.value = null
     }
 }

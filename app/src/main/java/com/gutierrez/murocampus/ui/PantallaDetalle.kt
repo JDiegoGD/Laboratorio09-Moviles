@@ -11,14 +11,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,6 +36,16 @@ fun PantallaDetalle(
 ) {
     LaunchedEffect(id) { vm.abrir(id) }
     val estado by vm.detalle.collectAsStateWithLifecycle()
+    val edicion by vm.edicion.collectAsStateWithLifecycle()
+    var editando by rememberSaveable { mutableStateOf(false) }
+
+    // Si el PATCH salió bien, cierra el diálogo
+    LaunchedEffect(edicion) {
+        if (edicion is UiState.Exito) {
+            editando = false
+            vm.reiniciarEdicion()
+        }
+    }
 
     Box(modifier.fillMaxSize()) {
         when (val e = estado) {
@@ -54,6 +67,9 @@ fun PantallaDetalle(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(post.body, style = MaterialTheme.typography.bodyLarge)
+                            FilledTonalButton(onClick = { editando = true }) {
+                                Text("Editar título")
+                            }
                         }
                     }
                     item {
@@ -69,7 +85,9 @@ fun PantallaDetalle(
                     items(comentarios, key = { it.id }) { c ->
                         Card(
                             Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f))
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
+                            )
                         ) {
                             Column(
                                 Modifier.padding(12.dp),
@@ -84,6 +102,19 @@ fun PantallaDetalle(
                             }
                         }
                     }
+                }
+
+                if (editando) {
+                    DialogoEditarTitulo(
+                        postId = post.id,
+                        tituloActual = post.title,
+                        edicion = edicion,
+                        onGuardar = { vm.editarTitulo(post.id, it) },
+                        onCerrar = {
+                            editando = false
+                            vm.reiniciarEdicion()
+                        }
+                    )
                 }
             }
         }

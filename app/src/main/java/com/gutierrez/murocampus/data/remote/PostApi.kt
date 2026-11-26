@@ -1,10 +1,12 @@
 package com.gutierrez.murocampus.data.remote
 
+import com.gutierrez.murocampus.model.CambioTitulo
 import com.gutierrez.murocampus.model.Comentario
 import com.gutierrez.murocampus.model.NuevoPost
 import com.gutierrez.murocampus.model.Post
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -25,4 +27,8 @@ interface PostApi {
 
     @POST("posts")
     suspend fun crear(@Body nuevo: NuevoPost): Post
+
+    // Fase 2: PATCH cambia solo los campos que enviamos
+    @PATCH("posts/{id}")
+    suspend fun editar(@Path("id") id: Int, @Body cambio: CambioTitulo): Post
 }

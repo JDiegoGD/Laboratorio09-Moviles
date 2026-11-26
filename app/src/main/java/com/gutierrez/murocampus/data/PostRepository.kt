@@ -1,6 +1,7 @@
 package com.gutierrez.murocampus.data
 
 import com.gutierrez.murocampus.data.remote.PostApi
+import com.gutierrez.murocampus.model.CambioTitulo
 import com.gutierrez.murocampus.model.Comentario
 import com.gutierrez.murocampus.model.NuevoPost
 import com.gutierrez.murocampus.model.Post
@@ -12,6 +13,7 @@ interface PostRepository {
     suspend fun comentarios(id: Int): Result<List<Comentario>>
     suspend fun porUsuario(userId: Int): Result<List<Post>>
     suspend fun crear(nuevo: NuevoPost): Result<Post>
+    suspend fun editar(id: Int, nuevoTitulo: String): Result<Post>
 }
 
 class PostRepositoryRemote(private val api: PostApi) : PostRepository {
@@ -27,6 +29,9 @@ class PostRepositoryRemote(private val api: PostApi) : PostRepository {
         ejecutarSeguro { api.porUsuario(userId) }
 
     override suspend fun crear(nuevo: NuevoPost): Result<Post> = ejecutarSeguro { api.crear(nuevo) }
+
+    override suspend fun editar(id: Int, nuevoTitulo: String): Result<Post> =
+        ejecutarSeguro { api.editar(id, CambioTitulo(nuevoTitulo)) }
 
     // Un solo try/catch para las cinco funciones
     private suspend fun <T> ejecutarSeguro(bloque: suspend () -> T): Result<T> =

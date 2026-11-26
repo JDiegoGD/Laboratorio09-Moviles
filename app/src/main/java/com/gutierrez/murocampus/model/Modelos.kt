@@ -35,3 +35,9 @@ data class NuevoPost(
     val title: String,
     val body: String
 )
+
+// Fase 2: cuerpo del PATCH (solo el campo que cambia)
+@Serializable
+data class CambioTitulo(
+    val title: String
+)
