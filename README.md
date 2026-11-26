@@ -50,6 +50,33 @@ com.gutierrez.murocampus/
 |---|---|---|---|---|
 | ![](capturas/lista.png) | ![](capturas/detalle.png) | ![](capturas/filtro.png) | ![](capturas/crear.png) | ![](capturas/error.png) |
 
+## Fase 2 · Mejoras con IA (rama `mejora-ia`)
+
+Tres mejoras hechas con Gemini en Android Studio, sin romper MVVM + Repository. Los prompts y lo
+que decidí con cada respuesta están en [PROMPTS.md](PROMPTS.md).
+
+| Mejora | Qué hace | Capas que cambian |
+|---|---|---|
+| Editar con PATCH | Botón "Editar título" en el detalle; abre un diálogo y envía `@PATCH("posts/{id}")` con `@Body CambioTitulo` | API + Repository + ViewModel + View |
+| Paginación | La lista carga de 20 en 20 con `@Query("_start")` y `@Query("_limit")` y un botón "Cargar 20 más" | API + Repository + ViewModel + View |
+| Búsqueda | Ícono de lupa en el encabezado; filtra por título lo ya cargado, sin nuevas peticiones | ViewModel + View |
+
+También rediseñé la interfaz con un estilo editorial: encabezado con esquinas redondeadas, títulos
+con serifa, número de cada publicación (`#07`), comentarios como línea de tiempo y vista previa en
+vivo al escribir una publicación.
+
+**Notas**
+- JSONPlaceholder responde al PATCH con el título nuevo pero no lo guarda; por eso la app lo
+  actualiza en memoria, en el detalle y en la lista.
+- Con un usuario elegido en los chips se usa `porUsuario` (10 publicaciones) y no se pagina.
+- El ViewModel sigue sin Retrofit ni `HttpException`: todo llega como `Result`.
+
+### Capturas de la Fase 2
+
+| Lista paginada | Detalle con Editar | Crear | Sin conexión |
+|---|---|---|---|
+| ![](capturas/f2-lista.png) | ![](capturas/f2-detalle.png) | ![](capturas/f2-crear.png) | ![](capturas/f2-error.png) |
+
 ## Para pensar
 
 **1. GET vs POST; @Body vs @Query.**
