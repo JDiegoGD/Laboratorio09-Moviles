@@ -31,4 +31,8 @@ interface PostApi {
     // Fase 2: PATCH cambia solo los campos que enviamos
     @PATCH("posts/{id}")
     suspend fun editar(@Path("id") id: Int, @Body cambio: CambioTitulo): Post
+
+    // Fase 2: paginación de 20 en 20
+    @GET("posts")
+    suspend fun pagina(@Query("_start") inicio: Int, @Query("_limit") limite: Int): List<Post>
 }

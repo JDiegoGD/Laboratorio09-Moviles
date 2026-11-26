@@ -14,6 +14,7 @@ interface PostRepository {
     suspend fun porUsuario(userId: Int): Result<List<Post>>
     suspend fun crear(nuevo: NuevoPost): Result<Post>
     suspend fun editar(id: Int, nuevoTitulo: String): Result<Post>
+    suspend fun pagina(inicio: Int, limite: Int): Result<List<Post>>
 }
 
 class PostRepositoryRemote(private val api: PostApi) : PostRepository {
@@ -32,6 +33,9 @@ class PostRepositoryRemote(private val api: PostApi) : PostRepository {
 
     override suspend fun editar(id: Int, nuevoTitulo: String): Result<Post> =
         ejecutarSeguro { api.editar(id, CambioTitulo(nuevoTitulo)) }
+
+    override suspend fun pagina(inicio: Int, limite: Int): Result<List<Post>> =
+        ejecutarSeguro { api.pagina(inicio, limite) }
 
     // Un solo try/catch para las cinco funciones
     private suspend fun <T> ejecutarSeguro(bloque: suspend () -> T): Result<T> =

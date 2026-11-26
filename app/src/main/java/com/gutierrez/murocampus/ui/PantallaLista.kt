@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +31,9 @@ fun PantallaLista(
 ) {
     val estado by vm.lista.collectAsStateWithLifecycle()
     val filtro by vm.usuarioFiltro.collectAsStateWithLifecycle()
+    val hayMas by vm.hayMas.collectAsStateWithLifecycle()
+    val cargandoMas by vm.cargandoMas.collectAsStateWithLifecycle()
+    val errorMas by vm.errorMas.collectAsStateWithLifecycle()
 
     Column(modifier.fillMaxSize()) {
         FilaFiltros(seleccionado = filtro, onElegir = { vm.filtrar(it) })
@@ -52,6 +58,20 @@ fun PantallaLista(
                                 cuerpo = post.body,
                                 onClick = { onAbrir(post.id) }
                             )
+                        }
+                        if (hayMas && filtro == null) {
+                            item {
+                                OutlinedButton(
+                                    onClick = { vm.cargarMas() },
+                                    enabled = !cargandoMas,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(if (cargandoMas) "Cargando…" else "Cargar más")
+                                }
+                            }
+                        }
+                        errorMas?.let { msg ->
+                            item { Text(msg, color = MaterialTheme.colorScheme.error) }
                         }
                     }
                 }

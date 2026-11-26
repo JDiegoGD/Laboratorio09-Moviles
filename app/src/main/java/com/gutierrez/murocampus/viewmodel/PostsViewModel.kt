@@ -26,6 +26,20 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     private val _lista = MutableStateFlow<UiState<List<Post>>>(UiState.Cargando)
     val lista: StateFlow<UiState<List<Post>>> = _lista.asStateFlow()
 
+    // ---------- Fase 2: paginación ----------
+    private val tamanoPagina = 20
+    private var siguienteInicio = 0
+    private var jobMas: Job? = null
+
+    private val _hayMas = MutableStateFlow(false)
+    val hayMas: StateFlow<Boolean> = _hayMas.asStateFlow()
+
+    private val _cargandoMas = MutableStateFlow(false)
+    val cargandoMas: StateFlow<Boolean> = _cargandoMas.asStateFlow()
+
+    private val _errorMas = MutableStateFlow<String?>(null)
+    val errorMas: StateFlow<String?> = _errorMas.asStateFlow()
+
     // ---------- Paso 8: filtro (null = Todos) ----------
     private val _usuarioFiltro = MutableStateFlow<Int?>(null)
     val usuarioFiltro: StateFlow<Int?> = _usuarioFiltro.asStateFlow()
@@ -52,9 +66,24 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     fun cargar() {
         jobLista?.cancel() // si tocas chips rápido, solo vale la última petición
+        jobMas?.cancel()
+        _cargandoMas.value = false
+        _errorMas.value = null
+        _hayMas.value = false
         jobLista = viewModelScope.launch {
             _lista.value = UiState.Cargando
             val userId = _usuarioFiltro.value
+            if (userId == null) {
+                // "Todos": primera página de 20
+                repo.pagina(0, tamanoPagina)
+                    .onSuccess {
+                        siguienteInicio = it.size
+                        _hayMas.value = it.size == tamanoPagina
+                        _lista.value = UiState.Exito(it)
+                    }
+                    .onFailure { _lista.value = UiState.Error(mensajeDe(it)) }
+                return@launch
+            }
             val resultado = if (userId == null) repo.listar() else repo.porUsuario(userId)
             resultado
                 .onSuccess { _lista.value = UiState.Exito(it) }
@@ -134,5 +163,23 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     fun reiniciarEdicion() {
         _edicion.value = null
+    }
+
+    fun cargarMas() {
+        if (_cargandoMas.value || !_hayMas.value || _usuarioFiltro.value != null) return
+        val actual = _lista.value
+        if (actual !is UiState.Exito) return
+        _cargandoMas.value = true
+        _errorMas.value = null
+        jobMas = viewModelScope.launch {
+            repo.pagina(siguienteInicio, tamanoPagina)
+                .onSuccess { nuevos ->
+                    siguienteInicio += nuevos.size
+                    _hayMas.value = nuevos.size == tamanoPagina
+                    _lista.value = UiState.Exito(actual.datos + nuevos)
+                }
+                .onFailure { _errorMas.value = mensajeDe(it) }
+            _cargandoMas.value = false
+        }
     }
 }
